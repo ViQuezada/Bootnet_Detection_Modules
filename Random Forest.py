@@ -50,8 +50,16 @@ classifier=RandomForestClassifier(n_estimators=25)
 #Construimos el modelo sobre los datos de entrenamiento
 classifier=classifier.fit(pred_train,tar_train)
 
+#guardamos el modelo
+import joblib
+joblib.dump(classifier, 'modelo_entrenado.joblib')
+
+#cargar el modelo
+classifier = joblib.load('modelo_entrenado.joblib')
+
 #Predecimos para los valores del grupo Test
 predictions=classifier.predict(pred_test)
+
 
 #ver resultados
 
