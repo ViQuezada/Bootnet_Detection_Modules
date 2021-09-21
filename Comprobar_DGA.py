@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+v#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Fri Jan 15 20:55:45 2021
@@ -20,7 +20,7 @@ import numpy as np
 from tabulate import tabulate
 from termcolor import colored
 
-#check por DGA
+#definir vocales y consonantes, la y es considerada una vocal segun la teoria
 voc=["a","e","i","o","u","y","A","E","I","O","U","Y"]
 cons=["b","c", "d", "f", "g", 
              "h", "j", "k", "l", "m", 
@@ -31,7 +31,7 @@ cons=["b","c", "d", "f", "g",
              "N", "Ñ", "P", "Q", "R", 
              "S", "T", "V", "W", "X", "Z"]
 
-
+# funcion dnde los parametros de RMA catalogan si es bot o limpio
 def rma(ln,max_cons,max_voc,entropia):
     if (entropia <= 2) and (ln<5):
         categoria="limpio"
@@ -42,7 +42,9 @@ def rma(ln,max_cons,max_voc,entropia):
     else:
         categoria="limpio"
     return(categoria)
-    
+
+#funcion para obtener el numero de vocales y consonantes, 
+#asi como el numero maximo de vocales y consonantes consecutivas
 def obtener_metricas(palabra):
     max_voc=0
     max_cons=0
@@ -85,6 +87,7 @@ def obtener_metricas(palabra):
         if (con_voc > max_voc):
             max_voc=con_voc
     
+    #para sacar la entropia de una palabra, considerando la longitud, las letras y probabilidad
     num_elem = len(palabra)
     prob_elem = 1/num_elem
     elem_set = set(palabra)
@@ -98,7 +101,7 @@ def obtener_metricas(palabra):
     entropia=round(entropia*(-1),2)
     return(ln,max_cons,max_voc,entropia)
 #
-    
+#conexion con elasticsearch 
 socks.set_default_proxy(socks.SOCKS5, "localhost", 9000)
 socket.socket = socks.socksocket
 
@@ -133,9 +136,9 @@ metrics_df['index']=valores
 
 metrics_df.to_csv(r'FP_anomalies_target1.csv',index=False)
 """
-#cargar archivo
+#cargar archivo de huellas catalogadas
 metrics_df=pd.read_csv("../Tesis/FP_anomalies_target1.csv")
-outliers=metrics_df.loc[metrics_df['anomaly']==-1]
+outliers=metrics_df.loc[metrics_df['anomaly']==-1] # obtener las huellas anomalas
 
 print("numero de huellas infectadas:",len(outliers))
 print("numero de hosts infectados:",len(set(outliers['ip'])))
@@ -143,13 +146,15 @@ print("Veces que los host han sido catalogados:")
 a=Counter(outliers['ip'])
 a=dict(a)
 
+#valores minimos maximos y promedios de los host con anomalias, 
+#de las veces que una de sus huellas a sido catalogada como anomala
 print("minimo de veces detectado:",min(a.values()))
 print("maximo de veces detectado:",max(a.values()))
 print("promedio de veces detectado:",statistics.mean(a.values()))
 
-salida = open("dominios_dga.txt", "w") 
+salida = open("dominios_dga.txt", "w") #crear un archivo con los dominos dga de cada huellas detectada
 for item in outliers['index']:
-    #obtener ip, gte y lte
+    #obtener ip, gte y lte, para buscar los dominos consultados por esa ip en el trascurso de esa hora
     ip_time=[metrics_df['ip'][item-1],metrics_df['@timestamp'][item-1]]
     
     gte=datetime.datetime.strptime(ip_time[1],'%Y-%m-%dT%H:%M:%SZ')
@@ -171,6 +176,8 @@ for item in outliers['index']:
     
     #contar bo
     #ii=0;
+    #con los sitios se procede a analizar cada sitio y de ser dga se exribira en el archivo de texto
+    #antes habra un encabezado de la ip y la hora a la que el sitio fue consultado
     sitios_dga=[]
     salida.write(metrics_df['ip'][item-1]+metrics_df['@timestamp'][item-1]+"\n")
     #print(colored(metrics_df['ip'][item-1],"red"),colored(metrics_df['@timestamp'][item-1],"red"))
