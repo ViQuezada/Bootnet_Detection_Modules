@@ -4,6 +4,9 @@
 Created on Mon Nov 16 17:13:27 2020
 
 @author: vicente
+
+la estructura de las diferentes consultas realizadas a elasticsearch
+los parametros cambias dependiendo lo que se desee consultar
 """
 import json
 
