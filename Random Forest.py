@@ -88,6 +88,7 @@ plt.show()
 #Si queremos ver todas las variables en caso de ser muchas, mejor usar el comando «list»
 #list(model.feature_importances_)
 
+#para listar la importancia de cada atributo para el algoritmo entrenado
 des=["Numero de solicitudes DNS por hora",
         "Numero de solicitudes DNS distintas por hora",
         "Mayor cantidad de solicitudes para un solo dominio por hora",
@@ -127,7 +128,7 @@ pyplot.ylabel("Porcentaje de Importancia")
 pyplot.bar(d, b)
 pyplot.show()
 
-#Para ver cuánto ha aportado cada nuevo árbol que hemos construido
+#Para ver cuánto ha aportado cada nuevo árbol que hemos construido, se ahce un barrido desde 1 a 41
 """
 trees=range(1,41)
 accuracy=np.zeros(40)
