@@ -4,6 +4,10 @@
 Created on Fri Jan 15 17:32:43 2021
 
 @author: vicente
+
+Este algoritmo sirve para aplicar isolation forest con un rango de numero de arboles
+se obtiene una grafica de el numero ed anomlias encontradas vs el numero de arboles
+el fin es poder hacer un analisis para escoger el numero de arboles ideal para el proyecto
 """
 import pandas as pd # data processing
 import warnings
@@ -14,6 +18,7 @@ import matplotlib.pyplot as plt
 warnings.filterwarnings('ignore')
 #print(os.listdir("../Tesis"))
 
+#leer dataset de huellas digitales
 df=pd.read_csv("../Tesis/fingerprints.csv")
 df.head()
 metrics_df=df
@@ -25,7 +30,8 @@ to_model_columns=metrics_df.columns[3:18]
                     #max_features=1.0, bootstrap=False, n_jobs=-1, random_state=42, 
                     #verbose=0)
 anomalias=[]
-estimador=[]                
+estimador=[]   
+#estimar modelo para un rango de 50 a 400 arboles 
 for i in range(5,40): 
     n_estimator=i*10
     clf=IsolationForest(n_estimators=n_estimator, max_samples='auto', contamination='auto',
@@ -43,7 +49,8 @@ for i in range(5,40):
     anomalias.append(a.values[1])
     print(n_estimator)
     print(metrics_df['anomaly'].value_counts())
-
+    
+#graficar numero de anomlias vs numero de arboles
 plt.figure()
 plt.title("Número de Anomalías Encontradas")
 plt.xlabel("Numero de Árboles")
