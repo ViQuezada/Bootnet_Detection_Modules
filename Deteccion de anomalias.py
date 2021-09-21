@@ -21,8 +21,10 @@ from matplotlib import mpl
 import plotly.graph_objs as go
 import plotly.io as pio
 
-#################################3
-def plot_anomaly(df,metric_name):
+#################################
+#Funcion para graficar para cada atributo los diferentes valores que tienes las huellas
+# se pinta de rojo las anomalias y azul lo limpio
+def plot_anomaly(df,metric_name): 
     # Descripcion
     descrip=["P1","Numero de solicitudes DNS por hora",
             "P2","Numero de solicitudes DNS distintas por hora",
@@ -39,7 +41,7 @@ def plot_anomaly(df,metric_name):
             "P13","Número de ciudades distintas de direcciones IP resueltas",
             "P14","Número de países distintos de direcciones IP resueltas",
             "P15","Relación de flujo por hora"]
-    pio.renderers.default='browser'
+    pio.renderers.default='browser' # para que las graficas aparezcan en el navegador
     #df.load_date = pd.to_datetime(df['load_date'].astype(str), format="%Y%m%d")
     dates = df.load_date
     #identify the anomaly points and create a array of its values for plot
@@ -76,6 +78,7 @@ def plot_anomaly(df,metric_name):
 #                   ))
     #print(table)
     #Plot the actuals points
+    #valores catalogados como limpios
     Actuals = go.Scatter(name='Limpio',
                          x=dates,
                          y=df['actuals'],
@@ -85,6 +88,7 @@ def plot_anomaly(df,metric_name):
                                      line=dict(width=1),
                                      color="blue"))
 #Highlight the anomaly points
+#valores catalogados cmo anomalias
     anomalies_map = go.Scatter(name="Bot",
                                showlegend=True,
                                x=dates,
@@ -142,22 +146,22 @@ def classify_anomalies(df,metric_name):
 warnings.filterwarnings('ignore')
 #print(os.listdir("../Tesis"))
 
+#leer el csv de huellas digitales obtenido
 df=pd.read_csv("/home/vicente/Escritorio/Tesis/fingerprints.csv")
 df.head()
 metrics_df=df
-print("numero de host: ",len(set(metrics_df['ip'])))
+print("numero de host: ",len(set(metrics_df['ip']))) # saber cuantos host distintos existen
 
 metrics_df.columns
-to_model_columns=metrics_df.columns[3:18]
-
+to_model_columns=metrics_df.columns[3:18] #definir las columnas con las cuales se va a entrenar el algoritmo
 #clf=IsolationForest(n_estimators=100, max_samples='auto', contamination=float(.12),
                     #max_features=1.0, bootstrap=False, n_jobs=-1, random_state=42, 
                     #verbose=0)
 clf=IsolationForest(n_estimators=110, max_samples='auto', contamination='auto',
                     max_features=1.0, bootstrap=False, n_jobs=-1, random_state=42, 
-                    verbose=0)
+                    verbose=0) #valores para el algoritmo de isolation forest
 clf.fit(metrics_df[to_model_columns])
-pred= clf.predict(metrics_df[to_model_columns])
+pred= clf.predict(metrics_df[to_model_columns]) # predecir anomalias
 metrics_df['anomaly']=pred
 outliers=metrics_df.loc[metrics_df['anomaly']==-1]
 outlier_index=list(outliers.index)
@@ -165,7 +169,7 @@ outlier_index=list(outliers.index)
 #Find the number of anomalies and normal points here points classified -1 are anomalous
 print(metrics_df['anomaly'].value_counts())
 
-pca = PCA(n_components=3)  # Reduce to k=3 dimensions
+pca = PCA(n_components=3)  # Reduce to k=3 dimensions para poder graficar 
 scaler = StandardScaler()
 #normalize the metrics
 X = scaler.fit_transform(metrics_df[to_model_columns])
@@ -203,7 +207,7 @@ ax.set_ylim3d(0,4)
 plt.show()
 
 plt.figure()
-pca = PCA(2)
+pca = PCA(2) # reduccion a 2 componentes para graficar
 pca.fit(metrics_df[to_model_columns])
 res=pd.DataFrame(pca.transform(metrics_df[to_model_columns]))
 Z = np.array(res)
@@ -217,7 +221,8 @@ plt.legend(loc="upper right")
 plt.show()
 
 ####
-metrics_df.to_csv(r'FP_anomalies_target.csv',index=False)
+#generar un nuevo dataset con las huellas pero esta vez catalogadas, 1 normal, -1 anormal
+metrics_df.to_csv(r'FP_anomalies_target.csv',index=False) 
 
 from elasticsearch import Elasticsearch
 import pandas as pd
@@ -230,6 +235,7 @@ def Convert(a):
     res_dct = dict(zip(it, it))
     return res_dct
 
+#conexion a elasticsearch
 socks.set_default_proxy(socks.SOCKS5, "localhost", 9000)
 socket.socket = socks.socksocket
 
@@ -244,6 +250,7 @@ try:
 except:
     pass
 
+#aparte del dataset obtenido en csv se suben los datos a elasticsearch para poder analizarlos
 datos_finales=[["@timestamp",time,
                 "ip",ip,"p1",p1,"p2",p2,"p3",p3,"p4",p4,"p5",p5,
                 "p6",p6,"p7",p7,"p8",p8,"p9",p9,"p10",p10,"p11",
@@ -253,7 +260,8 @@ datos_finales=[["@timestamp",time,
         metrics_df['P4'],metrics_df['P5'],metrics_df['P6'],metrics_df['P7'],metrics_df['P8'],metrics_df['P9'],
         metrics_df['P10'],metrics_df['P11'],metrics_df['P12'],metrics_df['P13'],metrics_df['P14'],metrics_df['P15'],
         metrics_df['anomaly'])]
-                        
+ 
+ #convertir los datos de array a tipo JSON y subir a elasticsearch
 datos_finales_json=[Convert(item) for item in datos_finales]
     
 for item in datos_finales_json:
@@ -268,6 +276,8 @@ warnings.filterwarnings('ignore')
 #metrics_df['index']=columna_indice
 ###
 
+# diferentes graficas de las huellas catalogadas obtenidas para ingresarlas en la teoria
+# las funciones de las graficas estan al inicio de este documento
 for i in range(3,len(metrics_df.columns)-1):
     clf.fit(metrics_df.iloc[:,i:i+1])
     pred = clf.predict(metrics_df.iloc[:,i:i+1])
