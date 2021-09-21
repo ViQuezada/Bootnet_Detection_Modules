@@ -41,7 +41,9 @@ def plot_anomaly(df,metric_name):
             "P13","Número de ciudades distintas de direcciones IP resueltas",
             "P14","Número de países distintos de direcciones IP resueltas",
             "P15","Relación de flujo por hora"]
-    pio.renderers.default='browser' # para que las graficas aparezcan en el navegador
+    
+    # para que las graficas aparezcan en el navegador, una grafica por atributo en una pestaña
+    pio.renderers.default='browser' 
     #df.load_date = pd.to_datetime(df['load_date'].astype(str), format="%Y%m%d")
     dates = df.load_date
     #identify the anomaly points and create a array of its values for plot
@@ -49,6 +51,11 @@ def plot_anomaly(df,metric_name):
     actuals = df["actuals"][-len(bool_array):]
     anomaly_points = bool_array * actuals
     anomaly_points[anomaly_points == 0] = np.nan
+    
+    #opcional a la grafica de puede desglozar una tabla con todos los valores
+    #donde en funcion del porcentaje de cambio de un valor con respecto al antecesor
+    #se pintara deun color rojo si es un cambio fuerte, de amarillo si el leve o gris si no hay un cambio mayor
+    
     #A dictionary for conditional format table based on anomaly
     #color_map = {0: "'rgba(228, 222, 249, 0.65)'", 1: "yellow", 2: "red"}
 #    color_map = {0: "silver", 1: "yellow", 2: "red"}
@@ -78,6 +85,7 @@ def plot_anomaly(df,metric_name):
 #                   ))
     #print(table)
     #Plot the actuals points
+    
     #valores catalogados como limpios
     Actuals = go.Scatter(name='Limpio',
                          x=dates,
@@ -102,7 +110,7 @@ def plot_anomaly(df,metric_name):
                                                color="red",
                                                width=1)))
     #print(anomalies_map)
-    
+    # atributos de las graficas a obtener
     axis = dict(
             showline=True,
             zeroline=False,
@@ -121,11 +129,14 @@ def plot_anomaly(df,metric_name):
             xaxis1=dict(axis, **dict(domain=[0, 1], anchor='y1', showticklabels=True)),
             yaxis1=dict(axis, **dict(domain=[2 * 0.21 + 0.20, 1], anchor='x1', hoverformat='.2f')))
     
+    #graficar
     fig = go.Figure(data=[Actuals,anomalies_map], layout=layout)
     fig.update_yaxes(type="log")
     iplot(fig)
     #pyplot.show()
 
+#cladificar anomalias, para graficar la tabla de cambio, alto leve o nulo.
+#0 normal(gris), 1 anomalia baja(amarillo) y 2 anomalia alta(rojo)
 def classify_anomalies(df,metric_name):
     df['metric_name']=metric_name
     df = df.sort_values(by='load_date', ascending=False)
@@ -146,17 +157,20 @@ def classify_anomalies(df,metric_name):
 warnings.filterwarnings('ignore')
 #print(os.listdir("../Tesis"))
 
+#inicia el programa
 #leer el csv de huellas digitales obtenido
 df=pd.read_csv("/home/vicente/Escritorio/Tesis/fingerprints.csv")
 df.head()
 metrics_df=df
 print("numero de host: ",len(set(metrics_df['ip']))) # saber cuantos host distintos existen
 
+#definir las columnas con las cuales se va a entrenar el algoritmo
 metrics_df.columns
-to_model_columns=metrics_df.columns[3:18] #definir las columnas con las cuales se va a entrenar el algoritmo
+to_model_columns=metrics_df.columns[3:18] 
 #clf=IsolationForest(n_estimators=100, max_samples='auto', contamination=float(.12),
                     #max_features=1.0, bootstrap=False, n_jobs=-1, random_state=42, 
                     #verbose=0)
+#definir el algoritmo de isolation forest con 110 arboles y entrenar
 clf=IsolationForest(n_estimators=110, max_samples='auto', contamination='auto',
                     max_features=1.0, bootstrap=False, n_jobs=-1, random_state=42, 
                     verbose=0) #valores para el algoritmo de isolation forest
@@ -169,7 +183,9 @@ outlier_index=list(outliers.index)
 #Find the number of anomalies and normal points here points classified -1 are anomalous
 print(metrics_df['anomaly'].value_counts())
 
-pca = PCA(n_components=3)  # Reduce to k=3 dimensions para poder graficar 
+ # Reduce to k=3 dimensions para poder graficar y observar
+ # esta grafica es completa
+pca = PCA(n_components=3) 
 scaler = StandardScaler()
 #normalize the metrics
 X = scaler.fit_transform(metrics_df[to_model_columns])
@@ -186,7 +202,9 @@ ax.legend()
 
 plt.show()
 
-pca = PCA(n_components=3)  # Reduce to k=3 dimensions
+# Reduce to k=3 dimensions
+# esta grafica escala los ejes con el fin de hacer un acercamiento a la zona de mayor concetracion de valores
+pca = PCA(n_components=3)  
 scaler = StandardScaler()
 #normalize the metrics
 X = scaler.fit_transform(metrics_df[to_model_columns])
@@ -206,8 +224,9 @@ ax.set_ylim3d(0,4)
 #ax.axis('off')
 plt.show()
 
+# reduccion a 2 componentes para graficar y observar
 plt.figure()
-pca = PCA(2) # reduccion a 2 componentes para graficar
+pca = PCA(2) 
 pca.fit(metrics_df[to_model_columns])
 res=pd.DataFrame(pca.transform(metrics_df[to_model_columns]))
 Z = np.array(res)
@@ -224,6 +243,7 @@ plt.show()
 #generar un nuevo dataset con las huellas pero esta vez catalogadas, 1 normal, -1 anormal
 metrics_df.to_csv(r'FP_anomalies_target.csv',index=False) 
 
+# comunicacioncon elasticsearch
 from elasticsearch import Elasticsearch
 import pandas as pd
 import socket
